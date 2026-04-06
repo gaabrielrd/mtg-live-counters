@@ -25,6 +25,17 @@ export default tseslint.config(
     }
   },
   {
+    files: ["apps/api/src/**/*.ts", "apps/api/tsup.config.ts"],
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "module",
+      globals: {
+        ...globals.node
+      }
+    }
+  },
+  {
     files: ["apps/web/src/**/*.{ts,tsx}", "apps/web/vite.config.ts"],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {

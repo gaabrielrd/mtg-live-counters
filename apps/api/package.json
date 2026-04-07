@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@mtg/shared": "workspace:*"
+    "@mtg/shared": "workspace:*",
+    "aws-jwt-verify": "^5.1.1"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.152",

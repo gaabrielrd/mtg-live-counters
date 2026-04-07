@@ -1,10 +1,13 @@
 import { BrowserRouter } from "react-router-dom";
+import { AuthSessionProvider } from "@/auth/auth-session";
 import { AppRoutes } from "@/routes/AppRoutes";
 
 export function App() {
   return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
+    <AuthSessionProvider>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AuthSessionProvider>
   );
 }

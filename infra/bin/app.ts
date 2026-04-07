@@ -56,8 +56,12 @@ for (const stageConfig of stages) {
 
   const apiStack = new ApiStack(app, `${stageConfig.prefix}-api`, {
     env: commonEnv,
-    stageConfig
+    stageConfig,
+    authUserPoolId: authStack.userPool.userPoolId,
+    authUserPoolClientId: authStack.userPoolClient.userPoolClientId,
+    authIssuer: authStack.userPool.userPoolProviderUrl
   });
+  apiStack.addDependency(authStack);
 
   const realtimeStack = new RealtimeStack(app, `${stageConfig.prefix}-realtime`, {
     env: commonEnv,

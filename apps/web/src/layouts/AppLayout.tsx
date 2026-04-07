@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { useAuthSession } from "@/auth/auth-session";
 
 const NAV_ITEMS = [
   { to: "/", label: "Home" },
@@ -7,6 +8,8 @@ const NAV_ITEMS = [
 ];
 
 export function AppLayout() {
+  const auth = useAuthSession();
+
   return (
     <div className="min-h-screen bg-transparent text-ink">
       <header className="sticky top-0 z-10 border-b border-stone-900/10 bg-paper/75 backdrop-blur">
@@ -20,24 +23,34 @@ export function AppLayout() {
             </p>
           </div>
 
-          <nav className="flex items-center gap-2 rounded-full border border-stone-900/10 bg-white/70 p-1">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  [
-                    "rounded-full px-4 py-2 text-sm transition",
-                    isActive
-                      ? "bg-ink text-paper"
-                      : "text-stone-700 hover:bg-stone-900/5"
-                  ].join(" ")
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+          <div className="flex items-center gap-4">
+            <div className="hidden rounded-full border border-stone-900/10 bg-white/70 px-4 py-2 text-xs uppercase tracking-[0.2em] text-stone-600 sm:block">
+              {auth.status === "authenticated"
+                ? auth.session?.user.email ?? "Authenticated"
+                : auth.status === "loading"
+                  ? "Loading session"
+                  : "Guest session"}
+            </div>
+
+            <nav className="flex items-center gap-2 rounded-full border border-stone-900/10 bg-white/70 p-1">
+              {NAV_ITEMS.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    [
+                      "rounded-full px-4 py-2 text-sm transition",
+                      isActive
+                        ? "bg-ink text-paper"
+                        : "text-stone-700 hover:bg-stone-900/5"
+                    ].join(" ")
+                  }
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+          </div>
         </div>
       </header>
 

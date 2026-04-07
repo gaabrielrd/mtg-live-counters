@@ -69,6 +69,8 @@ Arquivos de exemplo prontos:
 Exemplo para `infra/.env.dev`:
 
 ```bash
+DEV_WEB_CALLBACK_URLS="http://localhost:5173/auth/callback,http://localhost:5173"
+DEV_WEB_LOGOUT_URLS="http://localhost:5173"
 DEV_GOOGLE_CLIENT_ID="..."
 DEV_GOOGLE_CLIENT_SECRET="..."
 ```
@@ -76,6 +78,8 @@ DEV_GOOGLE_CLIENT_SECRET="..."
 Exemplo para `infra/.env.staging`:
 
 ```bash
+STAGING_WEB_CALLBACK_URLS="https://staging.example.com/auth/callback,https://staging.example.com"
+STAGING_WEB_LOGOUT_URLS="https://staging.example.com"
 STAGING_GOOGLE_CLIENT_ID="..."
 STAGING_GOOGLE_CLIENT_SECRET="..."
 ```
@@ -134,9 +138,29 @@ STAGING_GOOGLE_CLIENT_SECRET="..."
 pnpm --filter infra deploy:auth:dev
 ```
 
+## Email e senha nativos
+
+O User Pool agora é provisionado para email e senha como fluxo principal:
+
+- `selfSignUpEnabled: true`
+- login por email
+- política de senha mínima com 12 caracteres, maiúsculas, minúsculas e números
+- App Client público para SPA sem client secret
+- suporte a autenticação nativa no frontend
+
+O frontend usa essas credenciais do Cognito por meio de variáveis `VITE_*`. Crie `apps/web/.env.local` com base em `apps/web/.env.example` e preencha:
+
+```bash
+VITE_API_BASE_URL="http://127.0.0.1:3001"
+VITE_COGNITO_REGION="us-east-1"
+VITE_COGNITO_USER_POOL_ID="..."
+VITE_COGNITO_USER_POOL_CLIENT_ID="..."
+VITE_COGNITO_HOSTED_UI_BASE_URL="https://..."
+```
+
 ## URLs e callbacks atuais
 
-O App Client do Cognito nasce com callbacks locais:
+Por padrão, o App Client do Cognito nasce com callbacks locais:
 
 - `http://localhost:5173/auth/callback`
 - `http://localhost:5173`
@@ -145,7 +169,29 @@ Logout URLs:
 
 - `http://localhost:5173`
 
-Essas URLs podem ser expandidas depois que o domínio da aplicação web for definido.
+Essas URLs podem ser sobrescritas por ambiente com `DEV_WEB_CALLBACK_URLS`, `DEV_WEB_LOGOUT_URLS`, `STAGING_WEB_CALLBACK_URLS` e `STAGING_WEB_LOGOUT_URLS`.
+
+## Validando tokens JWT
+
+O backend HTTP agora expõe `GET /auth/session` como rota autenticada mínima para validar a cadeia Cognito -> frontend -> API.
+
+Fluxo local sugerido:
+
+1. subir a API local:
+
+```bash
+pnpm --filter api dev
+```
+
+2. subir o frontend com as variáveis `VITE_*` preenchidas:
+
+```bash
+pnpm --filter web dev
+```
+
+3. abrir `/auth`, criar conta ou entrar com email e senha e clicar em "Validar token na API"
+
+Se o token estiver válido para o `User Pool` e `App Client` configurados, a API responde com as claims básicas do usuário autenticado.
 
 ## Observações
 

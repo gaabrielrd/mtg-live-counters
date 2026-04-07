@@ -228,7 +228,7 @@ Fluxos suportados:
 
 O frontend:
 
-- inicia login pelo Hosted UI
+- inicia login e cadastro por formulário nativo integrado ao Cognito User Pool
 - recebe sessão/tokens do Cognito
 - envia token JWT nas chamadas HTTP autenticadas
 - usa credenciais/tokens para estabelecer sessão WebSocket autenticada
@@ -252,7 +252,7 @@ O backend:
 Rationale:
 
 - Cognito atende autenticação gerenciada e reduz implementação customizada
-- Hosted UI com federação Google reduz complexidade inicial da integração social
+- formulários nativos permitem UX própria para email/senha sem abrir mão da federação Google via Hosted UI no futuro
 
 ## 7. Persistência em DynamoDB
 

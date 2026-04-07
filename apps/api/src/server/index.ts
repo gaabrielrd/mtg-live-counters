@@ -1,9 +1,9 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
-import { healthcheck } from "../index";
+import { authSession, healthcheck } from "../index";
 import { NotFoundError } from "../shared/errors";
-import { json } from "../shared/http";
+import { json, noContent } from "../shared/http";
 
 const port = Number(process.env.PORT ?? 3001);
 
@@ -76,8 +76,19 @@ function createApiGatewayEvent(
 }
 
 async function resolveRoute(event: APIGatewayProxyEventV2) {
+  if (event.requestContext.http.method === "OPTIONS") {
+    return noContent();
+  }
+
   if (event.requestContext.http.method === "GET" && event.rawPath === "/health") {
     return healthcheck(event);
+  }
+
+  if (
+    event.requestContext.http.method === "GET" &&
+    event.rawPath === "/auth/session"
+  ) {
+    return authSession(event);
   }
 
   throw new NotFoundError(`Route ${event.requestContext.http.method} ${event.rawPath} not found`);
@@ -130,6 +141,7 @@ const server = createServer(async (request, response) => {
 server.listen(port, "127.0.0.1", () => {
   console.info("api.local.ready", {
     port,
-    healthcheckUrl: `http://127.0.0.1:${port}/health`
+    healthcheckUrl: `http://127.0.0.1:${port}/health`,
+    authSessionUrl: `http://127.0.0.1:${port}/auth/session`
   });
 });

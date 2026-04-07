@@ -1,5 +1,13 @@
 import type { APIGatewayProxyStructuredResultV2 } from "aws-lambda";
 
+function createCorsHeaders() {
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-headers": "authorization, content-type",
+    "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+  };
+}
+
 export function json<TBody>(
   statusCode: number,
   body: TBody
@@ -7,6 +15,7 @@ export function json<TBody>(
   return {
     statusCode,
     headers: {
+      ...createCorsHeaders(),
       "content-type": "application/json; charset=utf-8"
     },
     body: JSON.stringify(body)
@@ -35,4 +44,11 @@ export function internalError(
       message
     }
   });
+}
+
+export function noContent(): APIGatewayProxyStructuredResultV2 {
+  return {
+    statusCode: 204,
+    headers: createCorsHeaders()
+  };
 }

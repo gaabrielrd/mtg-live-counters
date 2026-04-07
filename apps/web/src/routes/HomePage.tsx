@@ -39,9 +39,9 @@ export function HomePage() {
             A calm control room for every Magic life total on the table.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-700">
-            This first frontend slice sets up routing, shared contracts,
-            styling, and a layout shell ready for authentication, match
-            creation, and real-time updates.
+            The frontend now carries a real Cognito-native authentication flow,
+            API-ready token handling, and the same typed shell prepared for
+            match creation and real-time updates.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">

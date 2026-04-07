@@ -30,3 +30,9 @@ export class ValidationError extends AppError {
     super(message, { statusCode: 400, code: "VALIDATION_ERROR", details });
   }
 }
+
+export class UnauthorizedError extends AppError {
+  constructor(message = "Authentication required", details?: Record<string, unknown>) {
+    super(message, { statusCode: 401, code: "UNAUTHORIZED", details });
+  }
+}

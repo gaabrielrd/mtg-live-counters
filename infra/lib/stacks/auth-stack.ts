@@ -3,12 +3,15 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import { BaseStack, type BaseStackProps } from "./base-stack";
 
 export class AuthStack extends BaseStack {
+  readonly userPool: cognito.UserPool;
+  readonly userPoolClient: cognito.UserPoolClient;
+
   constructor(scope: import("constructs").Construct, id: string, props: BaseStackProps) {
     super(scope, id, props);
 
-    const userPool = new cognito.UserPool(this, "UserPool", {
+    this.userPool = new cognito.UserPool(this, "UserPool", {
       userPoolName: this.createName("user-pool"),
-      selfSignUpEnabled: false,
+      selfSignUpEnabled: true,
       signInAliases: {
         email: true
       },
@@ -18,6 +21,7 @@ export class AuthStack extends BaseStack {
           mutable: false
         }
       },
+      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       passwordPolicy: {
         minLength: 12,
         requireDigits: true,
@@ -40,7 +44,7 @@ export class AuthStack extends BaseStack {
         this,
         "GoogleIdentityProvider",
         {
-          userPool,
+          userPool: this.userPool,
           clientId: this.stageConfig.googleClientId!,
           clientSecret: this.stageConfig.googleClientSecret!,
           scopes: ["openid", "email", "profile"],
@@ -54,16 +58,17 @@ export class AuthStack extends BaseStack {
       );
     }
 
-    const domain = userPool.addDomain("HostedUiDomain", {
+    const domain = this.userPool.addDomain("HostedUiDomain", {
       cognitoDomain: {
         domainPrefix: this.stageConfig.hostedUiDomainPrefix
       }
     });
 
-    const userPoolClient = userPool.addClient("WebClient", {
+    this.userPoolClient = this.userPool.addClient("WebClient", {
       userPoolClientName: this.createName("web-client"),
       generateSecret: false,
       authFlows: {
+        userPassword: true,
         userSrp: true
       },
       oAuth: {
@@ -87,15 +92,19 @@ export class AuthStack extends BaseStack {
     });
 
     if (googleIdentityProvider) {
-      userPoolClient.node.addDependency(googleIdentityProvider);
+      this.userPoolClient.node.addDependency(googleIdentityProvider);
     }
 
     new CfnOutput(this, "UserPoolId", {
-      value: userPool.userPoolId
+      value: this.userPool.userPoolId
     });
 
     new CfnOutput(this, "UserPoolClientId", {
-      value: userPoolClient.userPoolClientId
+      value: this.userPoolClient.userPoolClientId
+    });
+
+    new CfnOutput(this, "UserPoolIssuer", {
+      value: this.userPool.userPoolProviderUrl
     });
 
     new CfnOutput(this, "HostedUiDomain", {

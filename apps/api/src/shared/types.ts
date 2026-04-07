@@ -11,6 +11,9 @@ export interface RequestContext {
   startedAt: number;
   auth: {
     userId?: string;
+    email?: string;
+    tokenUse?: "access" | "id";
+    claims?: Record<string, unknown>;
   };
 }
 

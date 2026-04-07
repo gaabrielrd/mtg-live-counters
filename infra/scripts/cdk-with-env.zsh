@@ -20,4 +20,6 @@ elif [[ "$stage" == "dev" || "$stage" == "staging" ]]; then
   echo "Info: $env_file not found. Continuing without stage secrets." >&2
 fi
 
+pnpm --dir .. --filter api build
+
 exec cdk --profile pcgabriel --context stage="$stage" "$@"

@@ -40,17 +40,17 @@ export function AuthCallbackPage() {
   }, [auth, navigate]);
 
   return (
-    <div className="mx-auto max-w-2xl rounded-[32px] border border-amber-950/10 bg-paper/90 p-8 text-ink shadow-card">
-      <p className="text-sm font-semibold uppercase tracking-[0.32em] text-ember/80">
+    <div className="mx-auto max-w-2xl rounded-[32px] border border-white/10 bg-[linear-gradient(155deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-8 text-ink shadow-card">
+      <p className="text-sm font-semibold uppercase tracking-[0.32em] text-gold/85">
         Google callback
       </p>
       <h1 className="mt-4 font-display text-4xl leading-tight">
         Finalizando sua autenticacao.
       </h1>
-      <p className="mt-4 text-base leading-7 text-stone-700">{message}</p>
-      <p className="mt-6 text-sm leading-7 text-stone-600">
+      <p className="mt-4 text-base leading-7 text-ink/86">{message}</p>
+      <p className="mt-6 text-sm leading-7 text-ink/80">
         Se algo travar, volte para{" "}
-        <Link to="/auth" className="font-semibold text-ember transition hover:text-ink">
+        <Link to="/auth" className="font-semibold text-gold transition hover:text-ink">
           /auth
         </Link>{" "}
         e tente novamente.

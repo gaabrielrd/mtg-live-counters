@@ -21,7 +21,9 @@ export function AuthField({
 }: AuthFieldProps) {
   return (
     <label className="block">
-      <span className="text-sm font-medium text-stone-700">{label}</span>
+      <span className="text-sm font-medium uppercase tracking-[0.18em] text-white/78">
+        {label}
+      </span>
       <input
         required
         type={type}
@@ -30,15 +32,15 @@ export function AuthField({
         autoComplete={autoComplete}
         onChange={(event) => onChange(event.target.value)}
         className={[
-          "mt-2 w-full rounded-2xl border bg-white px-4 py-3 text-ink outline-none transition",
+          "mt-2 w-full rounded-[22px] border bg-black/20 px-4 py-3 text-white outline-none transition placeholder:text-white/40",
           error
-            ? "border-rose-500/70 focus:border-rose-600"
-            : "border-stone-900/10 focus:border-ember"
+            ? "border-rose-400/70 focus:border-rose-400"
+            : "border-white/10 focus:border-ember"
         ].join(" ")}
         placeholder={placeholder}
       />
       {error ? (
-        <p className="mt-2 text-sm leading-6 text-rose-700">{error}</p>
+        <p className="mt-2 text-sm leading-6 text-rose-300">{error}</p>
       ) : null}
     </label>
   );

@@ -15,11 +15,11 @@ function RedirectAuthenticatedAuthRoute({ children }: { children: ReactElement }
 
   if (auth.status === "loading") {
     return (
-      <section className="rounded-[32px] border border-stone-900/10 bg-paper/85 p-10 shadow-card">
-        <p className="text-sm font-semibold uppercase tracking-[0.28em] text-ember/75">
+      <section className="rounded-[32px] border border-white/10 bg-[linear-gradient(155deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-10 shadow-card">
+        <p className="text-sm font-semibold uppercase tracking-[0.28em] text-gold/85">
           Session
         </p>
-        <p className="mt-4 text-base leading-7 text-stone-700">
+        <p className="mt-4 text-base leading-7 text-ink/86">
           Verificando a sessao atual...
         </p>
       </section>
@@ -38,11 +38,11 @@ function RequireAuthenticatedRoute({ children }: { children: ReactElement }) {
 
   if (auth.status === "loading") {
     return (
-      <section className="rounded-[32px] border border-stone-900/10 bg-paper/85 p-10 shadow-card">
-        <p className="text-sm font-semibold uppercase tracking-[0.28em] text-ember/75">
+      <section className="rounded-[32px] border border-white/10 bg-[linear-gradient(155deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-10 shadow-card">
+        <p className="text-sm font-semibold uppercase tracking-[0.28em] text-gold/85">
           Session
         </p>
-        <p className="mt-4 text-base leading-7 text-stone-700">
+        <p className="mt-4 text-base leading-7 text-ink/86">
           Verificando a sessao atual...
         </p>
       </section>

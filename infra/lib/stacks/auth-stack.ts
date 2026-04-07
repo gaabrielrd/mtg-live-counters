@@ -1,5 +1,6 @@
 import { CfnOutput } from "aws-cdk-lib";
 import * as cognito from "aws-cdk-lib/aws-cognito";
+import * as lambda from "aws-cdk-lib/aws-lambda";
 import { BaseStack, type BaseStackProps } from "./base-stack";
 
 export class AuthStack extends BaseStack {
@@ -8,6 +9,23 @@ export class AuthStack extends BaseStack {
 
   constructor(scope: import("constructs").Construct, id: string, props: BaseStackProps) {
     super(scope, id, props);
+
+    const preSignUpTrigger = new lambda.Function(this, "PreSignUpTrigger", {
+      functionName: this.createName("pre-sign-up"),
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "index.handler",
+      code: lambda.Code.fromInline(`
+        exports.handler = async (event) => {
+          event.response = {
+            ...event.response,
+            autoConfirmUser: true,
+            autoVerifyEmail: true
+          };
+
+          return event;
+        };
+      `)
+    });
 
     this.userPool = new cognito.UserPool(this, "UserPool", {
       userPoolName: this.createName("user-pool"),
@@ -22,6 +40,9 @@ export class AuthStack extends BaseStack {
         }
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      lambdaTriggers: {
+        preSignUp: preSignUpTrigger
+      },
       passwordPolicy: {
         minLength: 12,
         requireDigits: true,

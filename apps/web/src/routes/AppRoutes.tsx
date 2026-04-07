@@ -1,8 +1,36 @@
+import type { ReactElement } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useAuthSession } from "@/auth/auth-session";
 import { AppLayout } from "@/layouts/AppLayout";
+import { AuthCallbackPage } from "@/routes/AuthCallbackPage";
 import { AuthPage } from "@/routes/AuthPage";
 import { HomePage } from "@/routes/HomePage";
 import { PlaceholderPage } from "@/routes/PlaceholderPage";
+import { ProfilePage } from "@/routes/ProfilePage";
+import { SignupPage } from "@/routes/SignupPage";
+
+function RedirectAuthenticatedAuthRoute({ children }: { children: ReactElement }) {
+  const auth = useAuthSession();
+
+  if (auth.status === "loading") {
+    return (
+      <section className="rounded-[32px] border border-stone-900/10 bg-paper/85 p-10 shadow-card">
+        <p className="text-sm font-semibold uppercase tracking-[0.28em] text-ember/75">
+          Session
+        </p>
+        <p className="mt-4 text-base leading-7 text-stone-700">
+          Verificando a sessao atual...
+        </p>
+      </section>
+    );
+  }
+
+  if (auth.status === "authenticated") {
+    return <Navigate to="/profile" replace />;
+  }
+
+  return children;
+}
 
 export function AppRoutes() {
   return (
@@ -11,8 +39,22 @@ export function AppRoutes() {
         <Route index element={<HomePage />} />
         <Route
           path="/auth"
-          element={<AuthPage />}
+          element={
+            <RedirectAuthenticatedAuthRoute>
+              <AuthPage />
+            </RedirectAuthenticatedAuthRoute>
+          }
         />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route
+          path="/auth/signup"
+          element={
+            <RedirectAuthenticatedAuthRoute>
+              <SignupPage />
+            </RedirectAuthenticatedAuthRoute>
+          }
+        />
+        <Route path="/profile" element={<ProfilePage />} />
         <Route
           path="/matches"
           element={

@@ -15,6 +15,14 @@ import {
   CognitoUserPool
 } from "amazon-cognito-identity-js";
 import { getOptionalAuthConfig } from "./config";
+import {
+  clearStoredOAuthFlow,
+  createGoogleOAuthUrl,
+  exchangeAuthorizationCode,
+  getStoredOAuthState,
+  getStoredOAuthVerifier,
+  refreshHostedUiTokens
+} from "./oauth";
 
 export const authModuleSummary =
   "Cognito now backs native email/password sign up, sign in, token persistence, and backend-ready JWT session handling.";
@@ -29,6 +37,8 @@ export interface AuthSessionSnapshot {
   idToken: string;
   accessToken: string;
   expiresAt: number;
+  refreshToken?: string;
+  provider: "cognito" | "google";
 }
 
 interface AuthContextValue {
@@ -37,12 +47,15 @@ interface AuthContextValue {
   errorMessage: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  beginGoogleAuth: (mode: "login" | "signup") => Promise<void>;
+  completeGoogleCallback: (search: string) => Promise<void>;
   signOut: () => void;
   refreshSession: () => Promise<void>;
   getIdToken: () => Promise<string | undefined>;
 }
 
 const AuthSessionContext = createContext<AuthContextValue | undefined>(undefined);
+const hostedUiSessionStorageKey = "mtg.auth.hosted-ui.session";
 
 function getUserPool() {
   const authConfig = getOptionalAuthConfig();
@@ -87,8 +100,90 @@ function mapUserSession(idToken: string, accessToken: string) {
     },
     idToken,
     accessToken,
-    expiresAt: payload.exp * 1000
+    expiresAt: payload.exp * 1000,
+    provider: "cognito"
   } satisfies AuthSessionSnapshot;
+}
+
+function mapHostedUiSession(
+  idToken: string,
+  accessToken: string,
+  refreshToken?: string
+) {
+  const payload = decodeJwtPayload(idToken);
+
+  if (!payload.sub || !payload.exp) {
+    throw new Error("Token payload is missing required claims");
+  }
+
+  return {
+    user: {
+      id: payload.sub,
+      email: payload.email
+    },
+    idToken,
+    accessToken,
+    refreshToken,
+    expiresAt: payload.exp * 1000,
+    provider: "google"
+  } satisfies AuthSessionSnapshot;
+}
+
+function persistHostedUiSession(session: AuthSessionSnapshot | null) {
+  if (!session || session.provider !== "google") {
+    localStorage.removeItem(hostedUiSessionStorageKey);
+    return;
+  }
+
+  localStorage.setItem(hostedUiSessionStorageKey, JSON.stringify(session));
+}
+
+function readHostedUiSession() {
+  const rawValue = localStorage.getItem(hostedUiSessionStorageKey);
+
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(rawValue) as AuthSessionSnapshot;
+  } catch {
+    localStorage.removeItem(hostedUiSessionStorageKey);
+    return null;
+  }
+}
+
+async function resolveHostedUiSession() {
+  const storedSession = readHostedUiSession();
+
+  if (!storedSession) {
+    return null;
+  }
+
+  if (storedSession.expiresAt > Date.now() + 15_000) {
+    return storedSession;
+  }
+
+  if (!storedSession.refreshToken) {
+    persistHostedUiSession(null);
+    return null;
+  }
+
+  const refreshedTokens = await refreshHostedUiTokens(storedSession.refreshToken);
+
+  if (!refreshedTokens.id_token || !refreshedTokens.access_token) {
+    persistHostedUiSession(null);
+    return null;
+  }
+
+  const refreshedSession = mapHostedUiSession(
+    refreshedTokens.id_token,
+    refreshedTokens.access_token,
+    storedSession.refreshToken
+  );
+
+  persistHostedUiSession(refreshedSession);
+  return refreshedSession;
 }
 
 function getCurrentCognitoUser() {
@@ -96,6 +191,12 @@ function getCurrentCognitoUser() {
 }
 
 async function loadPersistedSession() {
+  const hostedUiSession = await resolveHostedUiSession();
+
+  if (hostedUiSession) {
+    return hostedUiSession;
+  }
+
   const currentUser = getCurrentCognitoUser();
 
   if (!currentUser) {
@@ -227,6 +328,7 @@ export function AuthSessionProvider({ children }: PropsWithChildren) {
     signIn: async (email, password) => {
       setErrorMessage(null);
       const nextSession = await signInWithCognito(email, password);
+      persistHostedUiSession(null);
       setSession(nextSession);
       setStatus("authenticated");
     },
@@ -234,11 +336,60 @@ export function AuthSessionProvider({ children }: PropsWithChildren) {
       setErrorMessage(null);
       await signUpWithCognito(email, password);
       const nextSession = await signInWithCognito(email, password);
+      persistHostedUiSession(null);
+      setSession(nextSession);
+      setStatus("authenticated");
+    },
+    beginGoogleAuth: async (mode) => {
+      setErrorMessage(null);
+      window.location.assign(await createGoogleOAuthUrl(mode));
+    },
+    completeGoogleCallback: async (search) => {
+      setErrorMessage(null);
+
+      const params = new URLSearchParams(search);
+      const code = params.get("code");
+      const state = params.get("state");
+      const error = params.get("error");
+      const errorDescription = params.get("error_description");
+
+      if (error) {
+        throw new Error(errorDescription ?? "Falha ao autenticar com Google.");
+      }
+
+      if (!code) {
+        throw new Error("Google callback sem codigo de autorizacao.");
+      }
+
+      const expectedState = getStoredOAuthState();
+      const verifier = getStoredOAuthVerifier();
+
+      if (!state || !expectedState || state !== expectedState || !verifier) {
+        clearStoredOAuthFlow();
+        throw new Error("Sessao OAuth invalida ou expirada. Tente novamente.");
+      }
+
+      const tokens = await exchangeAuthorizationCode(code, verifier);
+      clearStoredOAuthFlow();
+
+      if (!tokens.id_token || !tokens.access_token) {
+        throw new Error("Resposta do Cognito sem tokens suficientes.");
+      }
+
+      const nextSession = mapHostedUiSession(
+        tokens.id_token,
+        tokens.access_token,
+        tokens.refresh_token
+      );
+
+      persistHostedUiSession(nextSession);
       setSession(nextSession);
       setStatus("authenticated");
     },
     signOut: () => {
       getCurrentCognitoUser()?.signOut();
+      clearStoredOAuthFlow();
+      persistHostedUiSession(null);
       setSession(null);
       setStatus("guest");
       setErrorMessage(null);

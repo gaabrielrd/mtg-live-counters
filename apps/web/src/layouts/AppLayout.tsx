@@ -4,6 +4,7 @@ import { useAuthSession } from "@/auth/auth-session";
 const NAV_ITEMS = [
   { to: "/", label: "Home" },
   { to: "/matches", label: "Matches" },
+  { to: "/profile", label: "Profile" },
   { to: "/auth", label: "Auth" }
 ];
 

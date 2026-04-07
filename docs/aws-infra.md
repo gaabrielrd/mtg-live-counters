@@ -143,10 +143,14 @@ pnpm --filter infra deploy:auth:dev
 O User Pool agora é provisionado para email e senha como fluxo principal:
 
 - `selfSignUpEnabled: true`
+- auto confirmacao no `pre sign-up`
+- auto verificacao de email no `pre sign-up`
 - login por email
 - política de senha mínima com 12 caracteres, maiúsculas, minúsculas e números
 - App Client público para SPA sem client secret
 - suporte a autenticação nativa no frontend
+
+Com isso, contas novas nao exigem digitacao de codigo de confirmacao antes do primeiro login.
 
 O frontend usa essas credenciais do Cognito por meio de variáveis `VITE_*`. Crie `apps/web/.env.local` com base em `apps/web/.env.example` e preencha:
 

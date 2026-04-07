@@ -5,7 +5,8 @@ import { AppLayout } from "@/layouts/AppLayout";
 import { AuthCallbackPage } from "@/routes/AuthCallbackPage";
 import { AuthPage } from "@/routes/AuthPage";
 import { HomePage } from "@/routes/HomePage";
-import { PlaceholderPage } from "@/routes/PlaceholderPage";
+import { MatchCreatePage } from "@/routes/MatchCreatePage";
+import { MatchRoomPage } from "@/routes/MatchRoomPage";
 import { ProfilePage } from "@/routes/ProfilePage";
 import { SignupPage } from "@/routes/SignupPage";
 
@@ -27,6 +28,29 @@ function RedirectAuthenticatedAuthRoute({ children }: { children: ReactElement }
 
   if (auth.status === "authenticated") {
     return <Navigate to="/profile" replace />;
+  }
+
+  return children;
+}
+
+function RequireAuthenticatedRoute({ children }: { children: ReactElement }) {
+  const auth = useAuthSession();
+
+  if (auth.status === "loading") {
+    return (
+      <section className="rounded-[32px] border border-stone-900/10 bg-paper/85 p-10 shadow-card">
+        <p className="text-sm font-semibold uppercase tracking-[0.28em] text-ember/75">
+          Session
+        </p>
+        <p className="mt-4 text-base leading-7 text-stone-700">
+          Verificando a sessao atual...
+        </p>
+      </section>
+    );
+  }
+
+  if (auth.status !== "authenticated") {
+    return <Navigate to="/auth" replace />;
   }
 
   return children;
@@ -58,10 +82,17 @@ export function AppRoutes() {
         <Route
           path="/matches"
           element={
-            <PlaceholderPage
-              title="Match experience"
-              description="Match creation, join-by-code, and life total management will grow from this module."
-            />
+            <RequireAuthenticatedRoute>
+              <MatchCreatePage />
+            </RequireAuthenticatedRoute>
+          }
+        />
+        <Route
+          path="/matches/:matchId"
+          element={
+            <RequireAuthenticatedRoute>
+              <MatchRoomPage />
+            </RequireAuthenticatedRoute>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

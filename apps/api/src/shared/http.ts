@@ -26,6 +26,10 @@ export function ok<TBody>(body: TBody): APIGatewayProxyStructuredResultV2 {
   return json(200, body);
 }
 
+export function created<TBody>(body: TBody): APIGatewayProxyStructuredResultV2 {
+  return json(201, body);
+}
+
 export function badRequest(message: string): APIGatewayProxyStructuredResultV2 {
   return json(400, {
     error: {

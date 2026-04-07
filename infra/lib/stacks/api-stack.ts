@@ -3,6 +3,7 @@ import * as apigw from "aws-cdk-lib/aws-apigateway";
 import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
 import * as logs from "aws-cdk-lib/aws-logs";
 import * as integrations from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,6 +16,8 @@ export interface ApiStackProps extends BaseStackProps {
   authUserPoolId: string;
   authUserPoolClientId: string;
   authIssuer: string;
+  dataTable: dynamodb.ITable;
+  dataTableName: string;
 }
 
 export class ApiStack extends BaseStack {
@@ -35,7 +38,8 @@ export class ApiStack extends BaseStack {
       COGNITO_REGION: this.stageConfig.region,
       COGNITO_USER_POOL_ID: props.authUserPoolId,
       COGNITO_USER_POOL_CLIENT_ID: props.authUserPoolClientId,
-      COGNITO_ISSUER: props.authIssuer
+      COGNITO_ISSUER: props.authIssuer,
+      GAME_TABLE_NAME: props.dataTableName
     };
 
     const healthcheckLambda = new lambda.Function(this, "HealthcheckLambda", {
@@ -53,6 +57,25 @@ export class ApiStack extends BaseStack {
       code: lambda.Code.fromAsset(apiAssetPath),
       environment: commonEnvironment,
     });
+
+    const createMatchLambda = new lambda.Function(this, "CreateMatchLambda", {
+      functionName: this.createName("http-create-match"),
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "dist/index.createMatch",
+      code: lambda.Code.fromAsset(apiAssetPath),
+      environment: commonEnvironment
+    });
+
+    const getMatchLambda = new lambda.Function(this, "GetMatchLambda", {
+      functionName: this.createName("http-get-match"),
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "dist/index.getMatch",
+      code: lambda.Code.fromAsset(apiAssetPath),
+      environment: commonEnvironment
+    });
+
+    props.dataTable.grantReadWriteData(createMatchLambda);
+    props.dataTable.grantReadData(getMatchLambda);
 
     const httpApi = new apigwv2.HttpApi(this, "HttpApi", {
       apiName: this.createName("http-api"),
@@ -76,6 +99,14 @@ export class ApiStack extends BaseStack {
       "AuthSessionIntegration",
       authSessionLambda
     );
+    const createMatchIntegration = new integrations.HttpLambdaIntegration(
+      "CreateMatchIntegration",
+      createMatchLambda
+    );
+    const getMatchIntegration = new integrations.HttpLambdaIntegration(
+      "GetMatchIntegration",
+      getMatchLambda
+    );
 
     httpApi.addRoutes({
       path: "/health",
@@ -87,6 +118,18 @@ export class ApiStack extends BaseStack {
       path: "/auth/session",
       methods: [apigwv2.HttpMethod.GET],
       integration: authSessionIntegration
+    });
+
+    httpApi.addRoutes({
+      path: "/matches",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: createMatchIntegration
+    });
+
+    httpApi.addRoutes({
+      path: "/matches/{matchId}",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: getMatchIntegration
     });
 
     const stage = new apigwv2.HttpStage(this, "HttpStage", {

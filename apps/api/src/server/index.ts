@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
-import { authSession, healthcheck } from "../index";
+import { authSession, createMatch, getMatch, healthcheck } from "../index";
 import { NotFoundError } from "../shared/errors";
 import { json, noContent } from "../shared/http";
 
@@ -27,7 +27,8 @@ async function readRequestBody(request: import("node:http").IncomingMessage) {
 
 function createApiGatewayEvent(
   request: import("node:http").IncomingMessage,
-  body?: string
+  body?: string,
+  pathParameters?: Record<string, string>
 ): APIGatewayProxyEventV2 {
   const host = request.headers.host ?? `127.0.0.1:${port}`;
   const requestUrl = new URL(request.url ?? "/", `http://${host}`);
@@ -70,7 +71,7 @@ function createApiGatewayEvent(
       }
     },
     body,
-    pathParameters: undefined,
+    pathParameters,
     isBase64Encoded: false
   };
 }
@@ -89,6 +90,23 @@ async function resolveRoute(event: APIGatewayProxyEventV2) {
     event.rawPath === "/auth/session"
   ) {
     return authSession(event);
+  }
+
+  if (event.requestContext.http.method === "POST" && event.rawPath === "/matches") {
+    return createMatch(event);
+  }
+
+  const getMatchPath = event.rawPath.match(/^\/matches\/(?<matchId>[^/]+)$/);
+
+  if (
+    event.requestContext.http.method === "GET" &&
+    getMatchPath?.groups?.matchId
+  ) {
+    event.pathParameters = {
+      matchId: getMatchPath.groups.matchId
+    };
+
+    return getMatch(event);
   }
 
   throw new NotFoundError(`Route ${event.requestContext.http.method} ${event.rawPath} not found`);

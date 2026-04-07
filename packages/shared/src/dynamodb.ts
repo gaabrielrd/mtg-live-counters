@@ -72,8 +72,16 @@ export function getMatchPlayerSortKey(userId: string): string {
   return `PLAYER#${userId}`;
 }
 
+export function getMatchPlayerSortKeyPrefix(): string {
+  return "PLAYER#";
+}
+
 export function getMatchEventSortKey(occurredAt: string, eventId: string): string {
   return `EVENT#${occurredAt}#${eventId}`;
+}
+
+export function getMatchEventSortKeyPrefix(): string {
+  return "EVENT#";
 }
 
 export function getConnectionSortKey(connectionId: string): string {

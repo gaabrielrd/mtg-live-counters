@@ -6,8 +6,9 @@
     "dev": "pnpm --filter web dev",
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",
+    "test": "zsh ./scripts/test.zsh",
     "build": "pnpm --filter @mtg/shared build && pnpm --filter api build && pnpm --filter infra build && pnpm --filter web build",
-    "lint": "pnpm --filter api lint && pnpm --filter infra lint && pnpm --filter web lint",
+    "lint": "pnpm --filter @mtg/shared lint && pnpm --filter api lint && pnpm --filter infra lint && pnpm --filter web lint",
     "typecheck": "pnpm --filter @mtg/shared typecheck && pnpm --filter api typecheck && pnpm --filter infra typecheck && pnpm --filter web typecheck",
     "infra:synth": "pnpm --filter infra synth",
     "infra:diff:dev": "pnpm --filter infra diff:dev",
@@ -22,6 +23,7 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
     "prettier": "^3.5.3",
+    "tsx": "^4.20.6",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.30.1"
   }

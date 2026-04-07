@@ -59,7 +59,9 @@ for (const stageConfig of stages) {
     stageConfig,
     authUserPoolId: authStack.userPool.userPoolId,
     authUserPoolClientId: authStack.userPoolClient.userPoolClientId,
-    authIssuer: authStack.userPool.userPoolProviderUrl
+    authIssuer: authStack.userPool.userPoolProviderUrl,
+    dataTable: dataStack.table,
+    dataTableName: dataStack.table.tableName
   });
   apiStack.addDependency(authStack);
 

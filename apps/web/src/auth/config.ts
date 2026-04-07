@@ -39,5 +39,13 @@ export function getAuthConfig(): AuthConfig {
 }
 
 export function getApiBaseUrl() {
-  return import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:3001";
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+
+  if (!apiBaseUrl) {
+    throw new Error(
+      "Missing API configuration: set VITE_API_BASE_URL in apps/web/.env.local to your local API or deployed HttpApiUrl."
+    );
+  }
+
+  return apiBaseUrl.replace(/\/+$/, "");
 }

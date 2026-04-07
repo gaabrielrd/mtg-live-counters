@@ -13,5 +13,6 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   outDir: "dist",
+  noExternal: ["@mtg/shared", "@aws-sdk/client-dynamodb", "@aws-sdk/lib-dynamodb"],
   external: ["node:http", "node:url", "node:crypto"]
 });

@@ -36,3 +36,9 @@ export class UnauthorizedError extends AppError {
     super(message, { statusCode: 401, code: "UNAUTHORIZED", details });
   }
 }
+
+export class ForbiddenError extends AppError {
+  constructor(message = "Forbidden", details?: Record<string, unknown>) {
+    super(message, { statusCode: 403, code: "FORBIDDEN", details });
+  }
+}

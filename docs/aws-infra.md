@@ -155,12 +155,22 @@ Com isso, contas novas nao exigem digitacao de codigo de confirmacao antes do pr
 O frontend usa essas credenciais do Cognito por meio de variáveis `VITE_*`. Crie `apps/web/.env.local` com base em `apps/web/.env.example` e preencha:
 
 ```bash
-VITE_API_BASE_URL="http://127.0.0.1:3001"
+VITE_API_BASE_URL="https://<http-api-id>.execute-api.us-east-1.amazonaws.com/dev"
 VITE_COGNITO_REGION="us-east-1"
 VITE_COGNITO_USER_POOL_ID="..."
 VITE_COGNITO_USER_POOL_CLIENT_ID="..."
 VITE_COGNITO_HOSTED_UI_BASE_URL="https://..."
 ```
+
+Para usar a API deployada em `dev`, copie o valor de `HttpApiUrl` emitido pelo `pnpm run infra:deploy:dev`.
+
+Se voce quiser usar a API local em vez da AWS, troque apenas:
+
+```bash
+VITE_API_BASE_URL="http://127.0.0.1:3001"
+```
+
+Nesse caso, a API local tambem precisa subir com `GAME_TABLE_NAME` configurado.
 
 ## URLs e callbacks atuais
 

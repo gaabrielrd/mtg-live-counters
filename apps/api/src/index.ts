@@ -1,5 +1,7 @@
 import { authenticatedMiddleware } from "./auth";
 import { authSessionHandler } from "./handlers/auth-session";
+import { createMatchHandler } from "./handlers/create-match";
+import { getMatchHandler } from "./handlers/get-match";
 import { healthcheckHandler } from "./handlers/healthcheck";
 import {
   errorHandlingMiddleware,
@@ -15,6 +17,20 @@ export const healthcheck = createLambdaEntry(healthcheckHandler, [
 ]);
 
 export const authSession = createLambdaEntry(authSessionHandler, [
+  errorHandlingMiddleware,
+  validationMiddleware,
+  loggingMiddleware,
+  authenticatedMiddleware
+]);
+
+export const createMatch = createLambdaEntry(createMatchHandler, [
+  errorHandlingMiddleware,
+  validationMiddleware,
+  loggingMiddleware,
+  authenticatedMiddleware
+]);
+
+export const getMatch = createLambdaEntry(getMatchHandler, [
   errorHandlingMiddleware,
   validationMiddleware,
   loggingMiddleware,

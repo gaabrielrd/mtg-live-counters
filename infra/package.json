@@ -1,0 +1,28 @@
+{
+  "name": "infra",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint . --ext .ts --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "cdk": "cdk --profile pcgabriel",
+    "synth": "./scripts/cdk-with-env.zsh dev synth",
+    "diff:dev": "./scripts/cdk-with-env.zsh dev diff --no-change-set",
+    "diff:staging": "./scripts/cdk-with-env.zsh staging diff --no-change-set",
+    "deploy:dev": "./scripts/cdk-with-env.zsh dev deploy --all --require-approval never",
+    "deploy:staging": "./scripts/cdk-with-env.zsh staging deploy --all --require-approval never",
+    "deploy:auth:dev": "./scripts/cdk-with-env.zsh dev deploy mtg-live-counters-dev-auth --require-approval never",
+    "deploy:auth:staging": "./scripts/cdk-with-env.zsh staging deploy mtg-live-counters-staging-auth --require-approval never"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.191.0",
+    "constructs": "^10.4.2"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.152",
+    "@types/node": "^24.6.0",
+    "tsx": "^4.20.6"
+  }
+}

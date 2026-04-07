@@ -1,0 +1,7 @@
+{
+  "app": "node --import tsx bin/app.ts",
+  "context": {
+    "projectName": "mtg-live-counters",
+    "defaultRegion": "us-east-1"
+  }
+}

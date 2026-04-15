@@ -1,4 +1,9 @@
-import type { CreateMatchRequest, MatchSnapshotResponse } from "@mtg/shared";
+import type {
+  CreateMatchRequest,
+  JoinMatchByCodeRequest,
+  JoinMatchByCodeResponse,
+  MatchSnapshotResponse
+} from "@mtg/shared";
 import type { HttpClientRequest } from "@/services/http-client";
 
 export interface MatchApiClient {
@@ -22,5 +27,16 @@ export function getMatchSnapshot(
 ): Promise<MatchSnapshotResponse> {
   return client.request<MatchSnapshotResponse>({
     path: `/matches/${matchId}`
+  });
+}
+
+export function joinMatchByCode(
+  client: MatchApiClient,
+  body: JoinMatchByCodeRequest
+): Promise<JoinMatchByCodeResponse> {
+  return client.request<JoinMatchByCodeResponse>({
+    path: "/matches/join",
+    method: "POST",
+    body
   });
 }

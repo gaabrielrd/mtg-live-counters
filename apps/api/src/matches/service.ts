@@ -1,12 +1,21 @@
 import { randomBytes, randomUUID } from "node:crypto";
-import type {
-  CreateMatchRequest,
-  Match,
-  MatchEvent,
-  MatchPlayer,
-  MatchSnapshotResponse
+import {
+  DOMAIN_ERROR_CODES,
+  type CreateMatchRequest,
+  type JoinMatchByCodeRequest,
+  type Match,
+  type MatchEvent,
+  type MatchPlayer,
+  type MatchSnapshotResponse,
+  validateAndNormalizeMatchCode,
+  isOpenMatchStatus
 } from "@mtg/shared";
-import { ValidationError, ForbiddenError, NotFoundError } from "../shared/errors";
+import {
+  AppError,
+  ValidationError,
+  ForbiddenError,
+  NotFoundError
+} from "../shared/errors";
 import { matchDomainDefaults } from "./config";
 
 const MATCH_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -29,6 +38,14 @@ export interface CreateMatchAggregateParams {
   requestId: string;
   now?: string;
   settings: NormalizedCreateMatchRequest;
+}
+
+export interface CreateJoinMatchAggregateParams {
+  aggregate: Pick<MatchAggregate, "match" | "players" | "events">;
+  userId: string;
+  displayName: string;
+  requestId: string;
+  now?: string;
 }
 
 export function normalizeCreateMatchRequest(
@@ -77,6 +94,35 @@ export function normalizeCreateMatchRequest(
     maxPlayers,
     isPublic
   };
+}
+
+export function normalizeJoinMatchRequest(
+  input: JoinMatchByCodeRequest | undefined
+): string {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new AppError("A valid match code is required", {
+      statusCode: 400,
+      code: DOMAIN_ERROR_CODES.MATCH_CODE_INVALID
+    });
+  }
+
+  if (typeof input.code !== "string") {
+    throw new AppError("A valid match code is required", {
+      statusCode: 400,
+      code: DOMAIN_ERROR_CODES.MATCH_CODE_INVALID
+    });
+  }
+
+  const result = validateAndNormalizeMatchCode(input.code);
+
+  if (!result.isValid) {
+    throw new AppError("A valid match code is required", {
+      statusCode: 400,
+      code: result.reason ?? DOMAIN_ERROR_CODES.MATCH_CODE_INVALID
+    });
+  }
+
+  return result.normalizedCode;
 }
 
 export function generateMatchCode(length = matchDomainDefaults.codeLength): string {
@@ -155,6 +201,93 @@ export function createMatchAggregate({
   };
 }
 
+export function createJoinMatchAggregate({
+  aggregate,
+  userId,
+  displayName,
+  requestId,
+  now = new Date().toISOString()
+}: CreateJoinMatchAggregateParams): MatchAggregate {
+  if (!isOpenMatchStatus(aggregate.match.status)) {
+    throw new AppError("Match is not accepting new players", {
+      statusCode: 409,
+      code: DOMAIN_ERROR_CODES.MATCH_FULL,
+      details: {
+        matchId: aggregate.match.matchId,
+        status: aggregate.match.status
+      }
+    });
+  }
+
+  if (aggregate.players.some((player) => player.userId === userId)) {
+    throw new AppError("Authenticated user already belongs to this match", {
+      statusCode: 409,
+      code: DOMAIN_ERROR_CODES.ALREADY_IN_MATCH,
+      details: {
+        matchId: aggregate.match.matchId,
+        userId
+      }
+    });
+  }
+
+  if (aggregate.match.currentPlayers >= aggregate.match.maxPlayers) {
+    throw new AppError("Match has no open seats", {
+      statusCode: 409,
+      code: DOMAIN_ERROR_CODES.MATCH_FULL,
+      details: {
+        matchId: aggregate.match.matchId,
+        currentPlayers: aggregate.match.currentPlayers,
+        maxPlayers: aggregate.match.maxPlayers
+      }
+    });
+  }
+
+  const seat =
+    aggregate.players.reduce(
+      (highestSeat, player) => Math.max(highestSeat, player.seat ?? 0),
+      0
+    ) + 1;
+
+  const playerId = randomUUID();
+  const eventId = randomUUID();
+  const player: MatchPlayer = {
+    matchId: aggregate.match.matchId,
+    playerId,
+    userId,
+    displayNameSnapshot: displayName,
+    currentLifeTotal: aggregate.match.initialLifeTotal,
+    joinedAt: now,
+    connectionState: "disconnected",
+    connectionCount: 0,
+    seat,
+    isOwner: false
+  };
+
+  const event: MatchEvent = {
+    matchId: aggregate.match.matchId,
+    eventId,
+    type: "player_joined",
+    actorUserId: userId,
+    targetUserId: userId,
+    targetPlayerId: playerId,
+    requestId,
+    occurredAt: now,
+    payload: {
+      seat
+    }
+  };
+
+  return {
+    match: {
+      ...aggregate.match,
+      currentPlayers: aggregate.match.currentPlayers + 1,
+      updatedAt: now
+    },
+    players: [...aggregate.players, player],
+    events: [...aggregate.events, event]
+  };
+}
+
 export function sortMatchPlayers<TPlayer extends Pick<MatchPlayer, "seat" | "joinedAt">>(
   players: TPlayer[]
 ): TPlayer[] {
@@ -214,12 +347,22 @@ export function toMatchSnapshotResponse(
 }
 
 export function assertMatchAggregateExists(
-  aggregate: Pick<MatchAggregate, "match" | "players"> | null,
+  aggregate: Pick<MatchAggregate, "match" | "players" | "events"> | null,
   matchId: string
-): Pick<MatchAggregate, "match" | "players"> {
+): Pick<MatchAggregate, "match" | "players" | "events"> {
   if (!aggregate) {
     throw new NotFoundError(`Match ${matchId} not found`);
   }
 
   return aggregate;
+}
+
+export function throwMatchCodeInvalid(code: string): never {
+  throw new AppError("Match code is invalid", {
+    statusCode: 404,
+    code: DOMAIN_ERROR_CODES.MATCH_CODE_INVALID,
+    details: {
+      code
+    }
+  });
 }

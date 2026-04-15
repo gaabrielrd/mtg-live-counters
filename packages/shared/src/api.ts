@@ -56,11 +56,7 @@ export interface MatchSnapshotResponse {
   viewerPlayerId: string;
 }
 
-export interface JoinMatchByCodeResponse {
-  match: MatchSnapshot;
-  participant: MatchSnapshotPlayer;
-  alreadyInMatch: boolean;
-}
+export type JoinMatchByCodeResponse = MatchSnapshotResponse;
 
 export interface MatchCodeValidationResult {
   normalizedCode: string;

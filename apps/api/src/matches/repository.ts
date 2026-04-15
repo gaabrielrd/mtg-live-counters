@@ -1,4 +1,5 @@
 import {
+  ConditionalCheckFailedException,
   DynamoDBClient
 } from "@aws-sdk/client-dynamodb";
 import {
@@ -9,6 +10,7 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import type {
   MatchEventItem,
+  Match,
   MatchItem,
   MatchPlayerItem
 } from "@mtg/shared";
@@ -47,6 +49,13 @@ export interface PersistedMatchAggregate {
   match: MatchItem;
   players: MatchPlayerItem[];
   events: MatchEventItem[];
+}
+
+export interface JoinMatchTransaction {
+  previousMatch: Match;
+  match: MatchAggregate["match"];
+  player: MatchAggregate["players"][number];
+  event: MatchAggregate["events"][number];
 }
 
 export class MatchRepository {
@@ -133,6 +142,45 @@ export class MatchRepository {
     );
   }
 
+  async joinMatchAggregate(transaction: JoinMatchTransaction): Promise<void> {
+    const matchItem = toMatchItem(transaction.match);
+    const playerItem = toMatchPlayerItem(transaction.player);
+    const eventItem = toMatchEventItem(transaction.event);
+
+    await this.client.send(
+      new TransactWriteCommand({
+        TransactItems: [
+          {
+            Put: {
+              TableName: this.tableName,
+              Item: matchItem,
+              ConditionExpression:
+                "attribute_exists(PK) AND attribute_exists(SK) AND updatedAt = :previousUpdatedAt AND currentPlayers = :previousCurrentPlayers",
+              ExpressionAttributeValues: {
+                ":previousUpdatedAt": transaction.previousMatch.updatedAt,
+                ":previousCurrentPlayers": transaction.previousMatch.currentPlayers
+              }
+            }
+          },
+          {
+            Put: {
+              TableName: this.tableName,
+              Item: playerItem,
+              ConditionExpression: "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+            }
+          },
+          {
+            Put: {
+              TableName: this.tableName,
+              Item: eventItem,
+              ConditionExpression: "attribute_not_exists(PK) AND attribute_not_exists(SK)"
+            }
+          }
+        ]
+      })
+    );
+  }
+
   async getMatchAggregate(matchId: string): Promise<PersistedMatchAggregate | null> {
     const result = await this.client.send(
       new QueryCommand({
@@ -165,4 +213,11 @@ export class MatchRepository {
       )
     };
   }
+}
+
+export function isConditionalWriteConflict(error: unknown): boolean {
+  return (
+    error instanceof ConditionalCheckFailedException ||
+    (error instanceof Error && error.name === "TransactionCanceledException")
+  );
 }

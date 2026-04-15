@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { randomUUID } from "node:crypto";
 import type { APIGatewayProxyEventV2 } from "aws-lambda";
-import { authSession, createMatch, getMatch, healthcheck } from "../index";
+import { authSession, createMatch, getMatch, healthcheck, joinMatch } from "../index";
 import { NotFoundError } from "../shared/errors";
 import { json, noContent } from "../shared/http";
 
@@ -94,6 +94,10 @@ async function resolveRoute(event: APIGatewayProxyEventV2) {
 
   if (event.requestContext.http.method === "POST" && event.rawPath === "/matches") {
     return createMatch(event);
+  }
+
+  if (event.requestContext.http.method === "POST" && event.rawPath === "/matches/join") {
+    return joinMatch(event);
   }
 
   const getMatchPath = event.rawPath.match(/^\/matches\/(?<matchId>[^/]+)$/);

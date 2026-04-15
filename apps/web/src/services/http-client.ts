@@ -7,6 +7,63 @@ export interface HttpClientRequest {
   body?: unknown;
 }
 
+export interface HttpClientErrorBody {
+  error?: {
+    code?: string;
+    message?: string;
+    details?: Record<string, unknown>;
+  };
+}
+
+export class HttpClientError extends Error {
+  readonly status: number;
+  readonly statusText: string;
+  readonly code?: string;
+  readonly details?: Record<string, unknown>;
+
+  constructor(params: {
+    status: number;
+    statusText: string;
+    message: string;
+    code?: string;
+    details?: Record<string, unknown>;
+  }) {
+    super(params.message);
+    this.name = "HttpClientError";
+    this.status = params.status;
+    this.statusText = params.statusText;
+    this.code = params.code;
+    this.details = params.details;
+  }
+}
+
+async function parseErrorResponse(response: Response): Promise<HttpClientError> {
+  const responseText = await response.text();
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    try {
+      const payload = JSON.parse(responseText) as HttpClientErrorBody;
+
+      return new HttpClientError({
+        status: response.status,
+        statusText: response.statusText,
+        message: payload.error?.message ?? `HTTP ${response.status} ${response.statusText}`,
+        code: payload.error?.code,
+        details: payload.error?.details
+      });
+    } catch {
+      // Fall through to the plain-text error.
+    }
+  }
+
+  return new HttpClientError({
+    status: response.status,
+    statusText: response.statusText,
+    message: responseText || `HTTP ${response.status} ${response.statusText}`
+  });
+}
+
 export function createHttpClient(options?: {
   getToken?: () => Promise<string | undefined>;
 }) {
@@ -27,10 +84,7 @@ export function createHttpClient(options?: {
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `HTTP ${response.status} ${response.statusText}: ${errorText || "request failed"}`
-        );
+        throw await parseErrorResponse(response);
       }
 
       if (response.status === 204) {

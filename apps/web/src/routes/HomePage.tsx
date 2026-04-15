@@ -1,11 +1,73 @@
-import { Link } from "react-router-dom";
+import { DOMAIN_ERROR_CODES } from "@mtg/shared";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { useAuthSession } from "@/auth/auth-session";
+import { joinMatchByCode } from "@/matches/api";
+import {
+  HttpClientError,
+  useAuthenticatedHttpClient
+} from "@/services/http-client";
+
+function getJoinErrorMessage(error: unknown): string {
+  if (error instanceof HttpClientError) {
+    switch (error.code) {
+      case DOMAIN_ERROR_CODES.MATCH_CODE_INVALID:
+        return "Codigo de partida invalido.";
+      case DOMAIN_ERROR_CODES.MATCH_FULL:
+        return "Essa partida nao aceita novos jogadores.";
+      case DOMAIN_ERROR_CODES.ALREADY_IN_MATCH:
+        return "Voce ja participa desta partida.";
+      case DOMAIN_ERROR_CODES.UNAUTHORIZED:
+        return "Voce precisa entrar na sua conta antes de participar.";
+      default:
+        return error.message || "Nao foi possivel entrar na partida.";
+    }
+  }
+
+  return error instanceof Error ? error.message : "Nao foi possivel entrar na partida.";
+}
 
 export function HomePage() {
   const auth = useAuthSession();
+  const httpClient = useAuthenticatedHttpClient();
+  const navigate = useNavigate();
+  const [joinCode, setJoinCode] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
   const primaryCta = auth.status === "authenticated" ? "/matches" : "/auth/signup";
   const primaryLabel =
     auth.status === "authenticated" ? "Create a match" : "Create your account";
+  const normalizedJoinCode = joinCode.trim().toUpperCase();
+
+  async function handleJoinMatch(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (auth.status !== "authenticated") {
+      toast.error("Voce precisa entrar na sua conta antes de participar.");
+      navigate("/auth");
+      return;
+    }
+
+    setIsJoining(true);
+
+    try {
+      const snapshot = await joinMatchByCode(httpClient, {
+        code: normalizedJoinCode
+      });
+
+      setJoinCode("");
+      toast.success("Partida encontrada. Entrando na mesa...");
+      navigate(`/matches/${snapshot.match.matchId}`, {
+        state: {
+          snapshot
+        }
+      });
+    } catch (error) {
+      toast.error(getJoinErrorMessage(error));
+    } finally {
+      setIsJoining(false);
+    }
+  }
 
   return (
     <div className="relative overflow-hidden">
@@ -87,21 +149,27 @@ export function HomePage() {
             room code or shared link and sync you into the active match snapshot.
           </p>
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <form className="mt-8 flex flex-col gap-3 sm:flex-row" onSubmit={handleJoinMatch}>
             <input
               type="text"
-              disabled
+              value={joinCode}
+              onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
               placeholder="ABCD12"
-              className="w-full rounded-full border border-white/10 bg-black/20 px-5 py-3 text-sm uppercase tracking-[0.32em] text-white/60 outline-none"
+              maxLength={12}
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              disabled={isJoining}
+              className="w-full rounded-full border border-white/10 bg-black/20 px-5 py-3 text-sm uppercase tracking-[0.32em] text-white outline-none transition focus:border-ember disabled:cursor-not-allowed disabled:text-white/60"
             />
             <button
-              type="button"
-              disabled
-              className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-white/60"
+              type="submit"
+              disabled={isJoining || normalizedJoinCode.length === 0}
+              className="rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold uppercase tracking-[0.16em] text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:text-white/60"
             >
-              Join match
+              {isJoining ? "Joining..." : "Join match"}
             </button>
-          </div>
+          </form>
         </div>
 
         <div className="rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(242,125,77,0.16),rgba(17,20,26,0.92))] p-8 shadow-card">

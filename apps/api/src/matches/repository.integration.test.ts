@@ -14,7 +14,7 @@ import {
   GSI_PUBLIC_OPEN_MATCHES
 } from "@mtg/shared";
 import { MatchRepository } from "./repository";
-import { createMatchAggregate } from "./service";
+import { createJoinMatchAggregate, createMatchAggregate } from "./service";
 
 let dynamoDbClient: DynamoDBClient;
 let documentClient: DynamoDBDocumentClient;
@@ -192,4 +192,54 @@ test("MatchRepository returns null or empty collections when the match does not 
   assert.equal(await repository.getMatchByCode("MISSING"), null);
   assert.deepEqual(await repository.listMatchPlayers("missing-match"), []);
   assert.equal(await repository.getMatchAggregate("missing-match"), null);
+});
+
+test("MatchRepository persists a joined player and updates the match aggregate atomically", async () => {
+  const tableName = createTableName();
+  await createTestTable(tableName);
+  const repository = createRepository(tableName);
+  const aggregate = createMatchAggregate({
+    ownerUserId: "user-123",
+    ownerDisplayName: "player@example.com",
+    requestId: "req-1",
+    now: "2026-04-07T12:00:00.000Z",
+    settings: {
+      initialLifeTotal: 40,
+      maxPlayers: 2,
+      isPublic: true
+    }
+  });
+
+  await repository.createMatchAggregate(aggregate);
+
+  const nextAggregate = createJoinMatchAggregate({
+    aggregate,
+    userId: "user-456",
+    displayName: "friend@example.com",
+    requestId: "req-2",
+    now: "2026-04-07T12:05:00.000Z"
+  });
+  const joinedPlayer = nextAggregate.players[1];
+  const joinedEvent = nextAggregate.events[1];
+
+  assert.ok(joinedPlayer);
+  assert.ok(joinedEvent);
+
+  await repository.joinMatchAggregate({
+    previousMatch: aggregate.match,
+    match: nextAggregate.match,
+    player: joinedPlayer!,
+    event: joinedEvent!
+  });
+
+  const persistedAggregate = await repository.getMatchAggregate(aggregate.match.matchId);
+  const matchByCode = await repository.getMatchByCode(aggregate.match.code);
+
+  assert.ok(persistedAggregate);
+  assert.equal(persistedAggregate.match.currentPlayers, 2);
+  assert.equal(persistedAggregate.players.length, 2);
+  assert.equal(persistedAggregate.events.length, 2);
+  assert.equal(persistedAggregate.events[1]?.type, "player_joined");
+  assert.equal(persistedAggregate.players[1]?.userId, "user-456");
+  assert.equal(matchByCode?.GSI3PK, undefined);
 });

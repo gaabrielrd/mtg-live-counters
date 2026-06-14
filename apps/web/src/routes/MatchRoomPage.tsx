@@ -1,6 +1,7 @@
 import type { MatchSnapshotResponse } from "@mtg/shared";
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import { PlayerCard } from "@/components/PlayerCard";
 import { getMatchSnapshot } from "@/matches/api";
 import {
   getMatchRoomGridLayout,
@@ -28,6 +29,7 @@ export function MatchRoomPage() {
   });
   const [isLoading, setIsLoading] = useState(!snapshot);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pendingPlayerId, setPendingPlayerId] = useState<string | null>(null);
   const playerCount = snapshot?.players.length ?? 0;
   const viewState = getMatchRoomViewState({
     isLoading,
@@ -120,6 +122,16 @@ export function MatchRoomPage() {
     );
   }
 
+  function handleLifeChange(playerId: string, delta: number) {
+    setPendingPlayerId(playerId);
+
+    // Snapshot-first placeholder until the authoritative life update flow is wired.
+    void Promise.resolve().then(() => {
+      void delta;
+      setPendingPlayerId((current) => (current === playerId ? null : current));
+    });
+  }
+
   return (
     <div className="space-y-8">
       <section className="rounded-[36px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] p-8 shadow-card lg:p-10">
@@ -197,43 +209,17 @@ export function MatchRoomPage() {
                   key={player.playerId}
                   className={`flex h-full ${gridLayout.maxCardWidthClassName}`}
                 >
-                  <div
-                    className={`flex w-full flex-col justify-between rounded-[30px] border p-6 shadow-card ${gridLayout.cardClassName} ${
-                      isViewer
-                        ? "border-gold/55 bg-[linear-gradient(160deg,rgba(216,179,106,0.18),rgba(255,255,255,0.05))]"
-                        : "border-white/10 bg-white/5"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="truncate text-xl font-semibold text-white">
-                          {player.displayNameSnapshot}
-                        </p>
-                        <p className="mt-2 text-xs uppercase tracking-[0.22em] text-white/65">
-                          {player.isOwner ? "Owner" : "Player"}
-                          {isViewer ? " • You" : ""}
-                        </p>
-                      </div>
-                      <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs uppercase tracking-[0.2em] text-white/65">
-                        Seat {player.seat ?? "-"}
-                      </span>
-                    </div>
-
-                    <div className="mt-8">
-                      <p className="text-xs uppercase tracking-[0.24em] text-white/55">
-                        Life total
-                      </p>
-                      <p className="mt-3 font-display text-6xl leading-none text-white">
-                        {player.currentLifeTotal}
-                      </p>
-                    </div>
-
-                    <div className="mt-8 flex items-center justify-between gap-3 border-t border-white/10 pt-4 text-sm text-white/78">
-                      <span>Conexao</span>
-                      <span className="capitalize text-white">
-                        {player.connectionState}
-                      </span>
-                    </div>
+                  <div className={gridLayout.cardClassName}>
+                    <PlayerCard
+                      displayName={player.displayNameSnapshot}
+                      currentLifeTotal={player.currentLifeTotal}
+                      connectionState={player.connectionState}
+                      isOwner={player.isOwner}
+                      isViewer={isViewer}
+                      seat={player.seat}
+                      isUpdating={pendingPlayerId === player.playerId}
+                      onLifeChange={(delta) => handleLifeChange(player.playerId, delta)}
+                    />
                   </div>
                 </article>
               );

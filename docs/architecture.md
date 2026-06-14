@@ -165,6 +165,7 @@ Operações esperadas na fase inicial:
 - autenticação indireta via tokens Cognito
 - `POST /matches`
 - `POST /matches/join`
+- `POST /matches/join-link`
 - `GET /matches/:matchId`
 - `GET /matches/public`
 - `POST /matches/:matchId/life`

@@ -5,6 +5,8 @@ import {
   MATCH_CODE_MAX_LENGTH,
   MATCH_CODE_MIN_LENGTH,
   normalizeMatchCode,
+  normalizeShareToken,
+  validateAndNormalizeShareToken,
   validateAndNormalizeMatchCode
 } from "./api";
 
@@ -36,8 +38,27 @@ test("validateAndNormalizeMatchCode accepts codes in configured range", () => {
   assert.equal(result.normalizedCode, "A".repeat(MATCH_CODE_MIN_LENGTH));
 });
 
+test("normalizeShareToken trims input", () => {
+  assert.equal(normalizeShareToken("  abc123  "), "abc123");
+});
+
+test("validateAndNormalizeShareToken rejects empty tokens", () => {
+  const result = validateAndNormalizeShareToken("   ");
+
+  assert.equal(result.isValid, false);
+  assert.equal(result.reason, DOMAIN_ERROR_CODES.MATCH_LINK_INVALID);
+});
+
+test("validateAndNormalizeShareToken accepts a non-empty token", () => {
+  const result = validateAndNormalizeShareToken("  share-token  ");
+
+  assert.equal(result.isValid, true);
+  assert.equal(result.normalizedShareToken, "share-token");
+});
+
 test("DOMAIN_ERROR_CODES exposes join-match domain errors", () => {
   assert.equal(DOMAIN_ERROR_CODES.MATCH_CODE_INVALID, "MATCH_CODE_INVALID");
+  assert.equal(DOMAIN_ERROR_CODES.MATCH_LINK_INVALID, "MATCH_LINK_INVALID");
   assert.equal(DOMAIN_ERROR_CODES.MATCH_FULL, "MATCH_FULL");
   assert.equal(DOMAIN_ERROR_CODES.ALREADY_IN_MATCH, "ALREADY_IN_MATCH");
   assert.equal(DOMAIN_ERROR_CODES.UNAUTHORIZED, "UNAUTHORIZED");

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PASSWORD_REQUIREMENTS } from "@/auth/auth-copy";
+import { resolvePostAuthRedirectPath } from "@/auth/post-auth-redirect";
 import { useAuthSession } from "@/auth/auth-session";
 import {
   hasSignupErrors,
@@ -56,7 +57,7 @@ export function SignupPage() {
       await auth.signUp(email.trim(), password);
       setResultMessage("Conta criada com sucesso. Redirecionando para a mesa...");
       window.setTimeout(() => {
-        navigate("/matches", { replace: true });
+        navigate(resolvePostAuthRedirectPath("/matches"), { replace: true });
       }, 700);
     } catch (error) {
       setResultMessage(

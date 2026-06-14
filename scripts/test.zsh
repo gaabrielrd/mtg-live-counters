@@ -17,4 +17,4 @@ docker compose -f docker-compose.test.yml up -d dynamodb-local >/dev/null
 sleep 2
 
 MATCH_REPOSITORY_TEST_ENDPOINT="http://127.0.0.1:8000" \
-  tsx --test packages/shared/src/**/*.test.ts apps/api/src/**/*.test.ts
+  tsx --test packages/shared/src/**/*.test.ts apps/api/src/**/*.test.ts apps/web/src/**/*.test.ts

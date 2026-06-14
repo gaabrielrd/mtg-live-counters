@@ -5,6 +5,7 @@ export const MATCH_CODE_MAX_LENGTH = 12;
 
 export const DOMAIN_ERROR_CODES = {
   MATCH_CODE_INVALID: "MATCH_CODE_INVALID",
+  MATCH_LINK_INVALID: "MATCH_LINK_INVALID",
   MATCH_FULL: "MATCH_FULL",
   ALREADY_IN_MATCH: "ALREADY_IN_MATCH",
   UNAUTHORIZED: "UNAUTHORIZED"
@@ -20,6 +21,10 @@ export interface CreateMatchRequest {
 
 export interface JoinMatchByCodeRequest {
   code: string;
+}
+
+export interface JoinMatchByLinkRequest {
+  shareToken: string;
 }
 
 export type MatchSnapshot = Pick<
@@ -57,6 +62,7 @@ export interface MatchSnapshotResponse {
 }
 
 export type JoinMatchByCodeResponse = MatchSnapshotResponse;
+export type JoinMatchByLinkResponse = MatchSnapshotResponse;
 
 export interface MatchCodeValidationResult {
   normalizedCode: string;
@@ -66,6 +72,10 @@ export interface MatchCodeValidationResult {
 
 export function normalizeMatchCode(code: string): string {
   return code.trim().toUpperCase();
+}
+
+export function normalizeShareToken(shareToken: string): string {
+  return shareToken.trim();
 }
 
 export function validateAndNormalizeMatchCode(code: string): MatchCodeValidationResult {
@@ -84,6 +94,31 @@ export function validateAndNormalizeMatchCode(code: string): MatchCodeValidation
 
   return {
     normalizedCode,
+    isValid: true
+  };
+}
+
+export interface MatchLinkValidationResult {
+  normalizedShareToken: string;
+  isValid: boolean;
+  reason?: DomainErrorCode;
+}
+
+export function validateAndNormalizeShareToken(
+  shareToken: string
+): MatchLinkValidationResult {
+  const normalizedShareToken = normalizeShareToken(shareToken);
+
+  if (!normalizedShareToken) {
+    return {
+      normalizedShareToken,
+      isValid: false,
+      reason: DOMAIN_ERROR_CODES.MATCH_LINK_INVALID
+    };
+  }
+
+  return {
+    normalizedShareToken,
     isValid: true
   };
 }

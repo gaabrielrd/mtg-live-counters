@@ -2,6 +2,8 @@ import type {
   CreateMatchRequest,
   JoinMatchByCodeRequest,
   JoinMatchByCodeResponse,
+  JoinMatchByLinkRequest,
+  JoinMatchByLinkResponse,
   MatchSnapshotResponse
 } from "@mtg/shared";
 import type { HttpClientRequest } from "@/services/http-client";
@@ -36,6 +38,17 @@ export function joinMatchByCode(
 ): Promise<JoinMatchByCodeResponse> {
   return client.request<JoinMatchByCodeResponse>({
     path: "/matches/join",
+    method: "POST",
+    body
+  });
+}
+
+export function joinMatchByLink(
+  client: MatchApiClient,
+  body: JoinMatchByLinkRequest
+): Promise<JoinMatchByLinkResponse> {
+  return client.request<JoinMatchByLinkResponse>({
+    path: "/matches/join-link",
     method: "POST",
     body
   });

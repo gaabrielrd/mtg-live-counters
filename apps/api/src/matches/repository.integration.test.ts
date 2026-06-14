@@ -155,6 +155,9 @@ test("MatchRepository persists and retrieves the match aggregate across supporte
 
   const matchById = await repository.getMatchById(aggregate.match.matchId);
   const matchByCode = await repository.getMatchByCode(aggregate.match.code);
+  const matchByShareToken = await repository.getMatchByShareToken(
+    aggregate.match.shareToken
+  );
   const players = await repository.listMatchPlayers(aggregate.match.matchId);
   const persistedAggregate = await repository.getMatchAggregate(
     aggregate.match.matchId
@@ -169,6 +172,9 @@ test("MatchRepository persists and retrieves the match aggregate across supporte
 
   assert.ok(matchByCode);
   assert.equal(matchByCode.matchId, aggregate.match.matchId);
+
+  assert.ok(matchByShareToken);
+  assert.equal(matchByShareToken.matchId, aggregate.match.matchId);
 
   assert.equal(players.length, 1);
   assert.equal(players[0]?.userId, aggregate.players[0]?.userId);
@@ -190,6 +196,7 @@ test("MatchRepository returns null or empty collections when the match does not 
 
   assert.equal(await repository.getMatchById("missing-match"), null);
   assert.equal(await repository.getMatchByCode("MISSING"), null);
+  assert.equal(await repository.getMatchByShareToken("missing-share"), null);
   assert.deepEqual(await repository.listMatchPlayers("missing-match"), []);
   assert.equal(await repository.getMatchAggregate("missing-match"), null);
 });

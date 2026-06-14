@@ -82,9 +82,18 @@ export class ApiStack extends BaseStack {
       environment: commonEnvironment
     });
 
+    const joinMatchByLinkLambda = new lambda.Function(this, "JoinMatchByLinkLambda", {
+      functionName: this.createName("http-join-match-link"),
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: "dist/index.joinMatchByLink",
+      code: lambda.Code.fromAsset(apiAssetPath),
+      environment: commonEnvironment
+    });
+
     props.dataTable.grantReadWriteData(createMatchLambda);
     props.dataTable.grantReadData(getMatchLambda);
     props.dataTable.grantReadWriteData(joinMatchLambda);
+    props.dataTable.grantReadWriteData(joinMatchByLinkLambda);
 
     const httpApi = new apigwv2.HttpApi(this, "HttpApi", {
       apiName: this.createName("http-api"),
@@ -120,6 +129,10 @@ export class ApiStack extends BaseStack {
       "JoinMatchIntegration",
       joinMatchLambda
     );
+    const joinMatchByLinkIntegration = new integrations.HttpLambdaIntegration(
+      "JoinMatchByLinkIntegration",
+      joinMatchByLinkLambda
+    );
 
     httpApi.addRoutes({
       path: "/health",
@@ -149,6 +162,12 @@ export class ApiStack extends BaseStack {
       path: "/matches/join",
       methods: [apigwv2.HttpMethod.POST],
       integration: joinMatchIntegration
+    });
+
+    httpApi.addRoutes({
+      path: "/matches/join-link",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: joinMatchByLinkIntegration
     });
 
     const stage = new apigwv2.HttpStage(this, "HttpStage", {

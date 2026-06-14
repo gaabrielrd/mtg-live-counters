@@ -17,10 +17,13 @@ import type {
 import {
   getMatchByCodeGsiPk,
   getMatchByCodeGsiSk,
+  getMatchByShareTokenGsiPk,
+  getMatchByShareTokenGsiSk,
   getMatchPartitionKey,
   getMatchPlayerSortKeyPrefix,
   getMatchSortKey,
-  GSI_MATCH_BY_CODE
+  GSI_MATCH_BY_CODE,
+  GSI_MATCH_BY_SHARE_TOKEN
 } from "@mtg/shared";
 import { getMatchesTableName } from "./config";
 import { toMatchEventItem, toMatchItem, toMatchPlayerItem } from "./dynamo-items";
@@ -97,6 +100,24 @@ export class MatchRepository {
         ExpressionAttributeValues: {
           ":codePk": getMatchByCodeGsiPk(code),
           ":codeSk": getMatchByCodeGsiSk()
+        },
+        Limit: 1
+      })
+    );
+
+    const item = result.Items?.[0];
+    return item ? (item as MatchItem) : null;
+  }
+
+  async getMatchByShareToken(shareToken: string): Promise<MatchItem | null> {
+    const result = await this.client.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        IndexName: GSI_MATCH_BY_SHARE_TOKEN,
+        KeyConditionExpression: "GSI2PK = :sharePk AND GSI2SK = :shareSk",
+        ExpressionAttributeValues: {
+          ":sharePk": getMatchByShareTokenGsiPk(shareToken),
+          ":shareSk": getMatchByShareTokenGsiSk()
         },
         Limit: 1
       })

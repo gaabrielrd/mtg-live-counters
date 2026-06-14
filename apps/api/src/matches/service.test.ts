@@ -6,6 +6,7 @@ import { toMatchItem, toMatchPlayerItem } from "./dynamo-items";
 import {
   createJoinMatchAggregate,
   createMatchAggregate,
+  normalizeJoinMatchByLinkRequest,
   normalizeJoinMatchRequest,
   normalizeCreateMatchRequest,
   toMatchSnapshotResponse
@@ -50,6 +51,24 @@ test("normalizeJoinMatchRequest rejects invalid match codes", () => {
     assert.equal(error.code, DOMAIN_ERROR_CODES.MATCH_CODE_INVALID);
     return true;
   });
+});
+
+test("normalizeJoinMatchByLinkRequest trims a valid share token", () => {
+  assert.equal(
+    normalizeJoinMatchByLinkRequest({ shareToken: "  share-token  " }),
+    "share-token"
+  );
+});
+
+test("normalizeJoinMatchByLinkRequest rejects invalid share tokens", () => {
+  assert.throws(
+    () => normalizeJoinMatchByLinkRequest({ shareToken: "   " }),
+    (error) => {
+      assert.ok(error instanceof AppError);
+      assert.equal(error.code, DOMAIN_ERROR_CODES.MATCH_LINK_INVALID);
+      return true;
+    }
+  );
 });
 
 test("createMatchAggregate makes the creator the first player with the initial life total", () => {

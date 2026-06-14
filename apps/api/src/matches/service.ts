@@ -3,11 +3,13 @@ import {
   DOMAIN_ERROR_CODES,
   type CreateMatchRequest,
   type JoinMatchByCodeRequest,
+  type JoinMatchByLinkRequest,
   type Match,
   type MatchEvent,
   type MatchPlayer,
   type MatchSnapshotResponse,
   validateAndNormalizeMatchCode,
+  validateAndNormalizeShareToken,
   isOpenMatchStatus
 } from "@mtg/shared";
 import {
@@ -123,6 +125,35 @@ export function normalizeJoinMatchRequest(
   }
 
   return result.normalizedCode;
+}
+
+export function normalizeJoinMatchByLinkRequest(
+  input: JoinMatchByLinkRequest | undefined
+): string {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new AppError("A valid match link is required", {
+      statusCode: 400,
+      code: DOMAIN_ERROR_CODES.MATCH_LINK_INVALID
+    });
+  }
+
+  if (typeof input.shareToken !== "string") {
+    throw new AppError("A valid match link is required", {
+      statusCode: 400,
+      code: DOMAIN_ERROR_CODES.MATCH_LINK_INVALID
+    });
+  }
+
+  const result = validateAndNormalizeShareToken(input.shareToken);
+
+  if (!result.isValid) {
+    throw new AppError("A valid match link is required", {
+      statusCode: 400,
+      code: result.reason ?? DOMAIN_ERROR_CODES.MATCH_LINK_INVALID
+    });
+  }
+
+  return result.normalizedShareToken;
 }
 
 export function generateMatchCode(length = matchDomainDefaults.codeLength): string {
@@ -363,6 +394,16 @@ export function throwMatchCodeInvalid(code: string): never {
     code: DOMAIN_ERROR_CODES.MATCH_CODE_INVALID,
     details: {
       code
+    }
+  });
+}
+
+export function throwMatchLinkInvalid(shareToken: string): never {
+  throw new AppError("Match link is invalid", {
+    statusCode: 404,
+    code: DOMAIN_ERROR_CODES.MATCH_LINK_INVALID,
+    details: {
+      shareToken
     }
   });
 }

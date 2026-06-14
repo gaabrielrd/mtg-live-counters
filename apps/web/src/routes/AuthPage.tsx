@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { resolvePostAuthRedirectPath } from "@/auth/post-auth-redirect";
 import { useAuthSession } from "@/auth/auth-session";
 import { AuthField } from "@/components/AuthField";
 import { AuthShell } from "@/components/AuthShell";
@@ -8,6 +9,7 @@ import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 
 export function AuthPage() {
   const auth = useAuthSession();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
@@ -21,6 +23,9 @@ export function AuthPage() {
     try {
       await auth.signIn(email.trim(), password);
       setResultMessage("Login concluido. Sua mesa esta pronta para abrir a proxima partida.");
+      window.setTimeout(() => {
+        navigate(resolvePostAuthRedirectPath("/matches"), { replace: true });
+      }, 500);
     } catch (error) {
       setResultMessage(
         error instanceof Error ? error.message : "Falha na autenticacao."

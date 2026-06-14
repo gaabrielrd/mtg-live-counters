@@ -1,10 +1,12 @@
 import type { ReactElement } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { readPostAuthRedirectPath } from "@/auth/post-auth-redirect";
 import { useAuthSession } from "@/auth/auth-session";
 import { AppLayout } from "@/layouts/AppLayout";
 import { AuthCallbackPage } from "@/routes/AuthCallbackPage";
 import { AuthPage } from "@/routes/AuthPage";
 import { HomePage } from "@/routes/HomePage";
+import { JoinMatchPage } from "@/routes/JoinMatchPage";
 import { MatchCreatePage } from "@/routes/MatchCreatePage";
 import { MatchRoomPage } from "@/routes/MatchRoomPage";
 import { ProfilePage } from "@/routes/ProfilePage";
@@ -27,7 +29,7 @@ function RedirectAuthenticatedAuthRoute({ children }: { children: ReactElement }
   }
 
   if (auth.status === "authenticated") {
-    return <Navigate to="/profile" replace />;
+    return <Navigate to={readPostAuthRedirectPath() ?? "/profile"} replace />;
   }
 
   return children;
@@ -79,6 +81,7 @@ export function AppRoutes() {
           }
         />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/join/:shareToken" element={<JoinMatchPage />} />
         <Route
           path="/matches"
           element={

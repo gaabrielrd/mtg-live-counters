@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { resolvePostAuthRedirectPath } from "@/auth/post-auth-redirect";
 import { useAuthSession } from "@/auth/auth-session";
 
 export function AuthCallbackPage() {
@@ -19,7 +20,7 @@ export function AuthCallbackPage() {
 
         setMessage("Conta Google conectada. Redirecionando...");
         window.setTimeout(() => {
-          navigate("/matches", { replace: true });
+          navigate(resolvePostAuthRedirectPath("/matches"), { replace: true });
         }, 500);
       })
       .catch((error) => {

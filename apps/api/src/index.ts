@@ -3,6 +3,7 @@ import { authSessionHandler } from "./handlers/auth-session";
 import { createMatchHandler } from "./handlers/create-match";
 import { getMatchHandler } from "./handlers/get-match";
 import { healthcheckHandler } from "./handlers/healthcheck";
+import { joinMatchByLinkHandler } from "./handlers/join-match-link";
 import { joinMatchHandler } from "./handlers/join-match";
 import {
   errorHandlingMiddleware,
@@ -39,6 +40,13 @@ export const getMatch = createLambdaEntry(getMatchHandler, [
 ]);
 
 export const joinMatch = createLambdaEntry(joinMatchHandler, [
+  errorHandlingMiddleware,
+  validationMiddleware,
+  loggingMiddleware,
+  authenticatedMiddleware
+]);
+
+export const joinMatchByLink = createLambdaEntry(joinMatchByLinkHandler, [
   errorHandlingMiddleware,
   validationMiddleware,
   loggingMiddleware,
